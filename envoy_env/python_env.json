@@ -1,3 +1,3 @@
 {
-    "+=PYTHONPATH": ["${__BUNDLE__}/py", "${__BUNDLE__}/py/stub/${PYTHON_STR_VERSION}"]
+    "+=PYTHONPATH": ["${__BUNDLE__}/py"]
 }
