@@ -1,0 +1,5 @@
+{
+    "STUDIO_MENU_ROOTS": ["${__BUNDLE__}/resource/menus/Studio_Tools"],
+    "CONTEXT_MENU_ROOTS": ["${__BUNDLE__}/resource/menus/contexts"],
+    "+=UE_PYTHONPATH": ["${__BUNDLE__}/py/gt/unreal/startup"]
+}
