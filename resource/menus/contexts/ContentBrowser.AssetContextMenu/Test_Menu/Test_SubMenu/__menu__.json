@@ -1,6 +1,6 @@
 {
-    "display_name": "By Asset Type",
-    "section": "Validation",
-    "tooltip": "Asset validation utilities",
+    "display_name": "Export Mesh Tools",
+    "section": "Export",
+    "tooltip": "Asset export utilities",
     "order": 1.0
 }
