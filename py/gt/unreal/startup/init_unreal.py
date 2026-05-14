@@ -1,6 +1,5 @@
+"""Startup script for Unreal Engine integration."""
 
-
-print("!---- Startup from Unreal Tools ----!")
 
 
 def initialize():
@@ -14,5 +13,7 @@ def initialize():
     session.load()
 
 
-
-initialize()
+try:
+    initialize()
+except Exception as e:
+    print(f"Error during initialization: {e}")
