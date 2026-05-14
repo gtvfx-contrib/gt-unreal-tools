@@ -11,6 +11,7 @@ from __future__ import annotations
 
 __all__ = [
     "MenuNode",
+    "list_menus",
     "_registry",
 ]
 
@@ -72,6 +73,29 @@ class MenuNode:
 # General helpers
 # ---------------------------------------------------------------------------
 
+def list_menus(search_limit: int = 2000, output: bool = False) -> List[str]:
+    """Return a list of all registered menu names."""
+    registered_names = set()
+    
+    # Iterate through potential transient object indices to find registered menus
+    for i in range(search_limit):
+        # UE 5.x uses "RegisteredMenu_" while UE 4.x used "ToolMenu_"
+        obj_path = f"/Engine/Transient.ToolMenus_0:RegisteredMenu_{i}"
+        menu_obj = unreal.find_object(None, obj_path)
+        
+        if menu_obj:
+            name = str(menu_obj.menu_name)
+            if name != "None":
+                registered_names.add(name)
+
+    if output:
+        print("Registered menus:")
+        for name in sorted(registered_names):
+            print(f" - {name}")
+                
+    return sorted(list(registered_names))
+
+
 def _strip_prefix(name: str) -> str:
     """Remove a leading numeric prefix (e.g. ``00_``) from *name*."""
     return _PREFIX_RE.sub("", name).strip()
@@ -91,7 +115,7 @@ def _extract_order(name: str) -> float:
     m = _PREFIX_RE.match(name)
     if m:
         try:
-            return float(re.match(r"(\d+(?:\.\d+)?)", name).group(1))
+            return float(m.group(1))
         except (AttributeError, ValueError):
             pass
     return float("inf")
@@ -306,6 +330,8 @@ def _scan_directory(dir_path: str) -> List[MenuNode]:
             if inject_config is not None:
                 # ── injection slot ─────────────────────────────────────────
                 display = inject_config.get("display_name") or _strip_prefix(name)
+                section = inject_config.get("section", "")
+                tooltip = inject_config.get("tooltip", "")
                 order = _extract_order(name)
                 children = _scan_inject_slot(entry.path, inject_config)
                 if not children:
@@ -316,11 +342,15 @@ def _scan_directory(dir_path: str) -> List[MenuNode]:
                     is_submenu=True,
                     children=children,
                     order=order,
+                    section=section,
+                    tooltip=tooltip,
                 ))
             else:
                 # ── normal submenu ─────────────────────────────────────────
                 config = _read_folder_config(entry.path)
                 display = config.get("display_name") or _strip_prefix(name)
+                section = config.get("section", "")
+                tooltip = config.get("tooltip", "")
                 children = _scan_directory(entry.path)
                 try:
                     order = (
@@ -335,6 +365,8 @@ def _scan_directory(dir_path: str) -> List[MenuNode]:
                     is_submenu=True,
                     children=children,
                     order=order,
+                    section=section,
+                    tooltip=tooltip,
                 ))
 
         elif entry.is_file() and name.lower().endswith(".py"):
@@ -392,15 +424,20 @@ def _merge_children(primary: List[MenuNode], secondary: List[MenuNode]) -> None:
 def _populate_menu(owner_name: str, parent_menu, node: MenuNode) -> None:
     """Recursively populate *parent_menu* from *node*'s children.
 
-    Sections are created on first use with ``add_section``.  Items and
-    sub-menus that carry no explicit ``section`` metadata are placed into a
-    section named ``"default"`` (with an empty label so no visible section
-    header appears).  Using a non-empty section name is required for freshly
-    created sub-menus (returned by ``add_sub_menu``) because those menus start
-    with zero pre-built sections; passing ``NAME_None`` (the empty string) as
-    the section name is a silent no-op in Unreal's ``AddSection`` and the
-    resulting ``NAME_None`` section is skipped by the menu renderer for regular
-    entries.
+    Sub-menu nodes are pre-registered via ``ToolMenus.register_menu`` before
+    the ``add_sub_menu`` entry is added to the parent.  Pre-registration
+    ensures the sub-menu is a **persistent** ``ToolMenu`` in the registry so
+    that items added to it survive dynamic menu rebuilds (e.g.
+    ``ContentBrowser.AssetContextMenu`` is rebuilt each time it opens; items
+    added to an ephemeral handle returned by ``add_sub_menu`` on a dynamic
+    menu are discarded on the next rebuild).
+
+    Leaf action items with no explicit ``# section:`` metadata are placed in
+    the implicit ``""`` (NAME_None) section, which is always present on every
+    registered ``ToolMenu`` and is rendered unconditionally.  Items with an
+    explicit ``# section:`` use the named section (created via
+    ``add_section`` if needed).  The same ``section`` / ``tooltip`` metadata
+    is honoured for sub-menu folder nodes via ``__menu__.json``.
 
     Parameters
     ----------
@@ -412,44 +449,128 @@ def _populate_menu(owner_name: str, parent_menu, node: MenuNode) -> None:
         An ``unreal.ToolMenu`` object to populate.
     node:
         The :class:`MenuNode` whose children are added to *parent_menu*.
+
     """
-    _DEFAULT_SECTION = "default"
+    # Section used when placing sub-menu entries in the parent.  add_sub_menu
+    # uses FindOrAddSection internally so this section is always valid.
+    _SUB_SECTION = "default"
+    _parent_path = str(getattr(parent_menu, "menu_name", "?"))
     added_sections: set = set()
 
     def _ensure_section(sec_name: str, sec_label: str) -> None:
-        if sec_name not in added_sections:
+        """Create *sec_name* on *parent_menu* if not already created.
+
+        Skipped for the empty string (NAME_None), which is always implicitly
+        present on every ``ToolMenu``.  For named sections, ``add_section`` is
+        wrapped in its own try-except so that a failure does not abort the
+        entire child item.
+        """
+        if not sec_name or sec_name in added_sections:
+            return
+        try:
             parent_menu.add_section(
                 unreal.Name(sec_name),
                 unreal.Text(sec_label) if sec_label else unreal.Text(""),
             )
-            added_sections.add(sec_name)
+        except Exception as exc:
+            print(
+                f"MenuLib: add_section({sec_name!r}) on {_parent_path!r}"
+                f" raised {type(exc).__name__}: {exc}"
+            )
+        added_sections.add(sec_name)
 
     for child in node.children:
         try:
             if child.is_separator:
-                _ensure_section(_DEFAULT_SECTION, "")
                 entry = unreal.ToolMenuEntry(type=unreal.MultiBlockType.SEPARATOR)
-                parent_menu.add_menu_entry(unreal.Name(_DEFAULT_SECTION), entry)
+                parent_menu.add_menu_entry(unreal.Name(""), entry)
 
             elif child.is_submenu:
-                _ensure_section(_DEFAULT_SECTION, "")
-                sub = parent_menu.add_sub_menu(
-                    unreal.Name(owner_name),
-                    unreal.Name(_DEFAULT_SECTION),
-                    _safe_name(child.display_name),
-                    unreal.Text(child.display_name),
+                sub_name = _safe_name(child.display_name)
+                sub_section_label = child.section
+                sub_section = (
+                    "".join(sub_section_label.split()) if sub_section_label else _SUB_SECTION
                 )
-                _populate_menu(owner_name, sub, child)
+                _ensure_section(sub_section, sub_section_label)
+
+                parent_path = str(parent_menu.menu_name)
+                sub_path = f"{parent_path}.{sub_name}"
+                print(
+                    f"MenuLib: add_sub_menu {child.display_name!r}"
+                    f" on {_parent_path!r} section={sub_section!r}"
+                )
+
+                # Pre-register the sub-menu as a persistent ToolMenu so its
+                # items survive dynamic menu rebuilds (e.g. the base
+                # ContentBrowser.AssetContextMenu is rebuilt each time it
+                # opens; items added to an unregistered ephemeral handle
+                # are discarded).  register_menu is idempotent: if the menu
+                # is already registered it returns the existing instance.
+                tool_menus = unreal.ToolMenus.get()
+                sub = tool_menus.find_menu(unreal.Name(sub_path))
+                if not sub:
+                    try:
+                        # Signature varies by UE version — try progressively
+                        # simpler calls until one succeeds.
+                        try:
+                            sub = tool_menus.register_menu(
+                                unreal.Name(sub_path),
+                                unreal.Name(""),
+                            )
+                        except TypeError:
+                            sub = tool_menus.register_menu(unreal.Name(sub_path))
+                        print(f"MenuLib: registered sub-menu {sub_path!r}")
+                    except Exception as reg_exc:
+                        print(
+                            f"MenuLib: register_menu({sub_path!r}) raised"
+                            f" {type(reg_exc).__name__}: {reg_exc}"
+                        )
+
+                # Add the flyout entry in the parent that points to our
+                # (now-registered) sub-menu.
+                add_sub_result = parent_menu.add_sub_menu(
+                    unreal.Name(owner_name),
+                    unreal.Name(sub_section),
+                    sub_name,
+                    unreal.Text(child.display_name),
+                    unreal.Text(child.tooltip) if child.tooltip else unreal.Text(""),
+                )
+
+                # Fall back to the add_sub_menu return value or a fresh
+                # find_menu call if register_menu was not available.
+                if not sub:
+                    sub = add_sub_result
+                    if not sub:
+                        try:
+                            sub = tool_menus.find_menu(unreal.Name(sub_path))
+                        except Exception:
+                            pass
+
+                if sub:
+                    print(
+                        f"MenuLib: OK sub-menu {child.display_name!r}"
+                        f" -> {str(getattr(sub, 'menu_name', '?'))!r}"
+                    )
+                    _populate_menu(owner_name, sub, child)
+                else:
+                    print(
+                        f"MenuLib: could not obtain sub-menu handle for"
+                        f" {child.display_name!r} — items inside will be skipped"
+                    )
 
             else:
+                # Use the explicit section declared by the item file, or fall
+                # back to NAME_None ("") which is always implicitly present on
+                # every registered ToolMenu and is rendered unconditionally.
+                # Using a named "default" section on dynamically-created
+                # sub-menus of context menus can cause items to be silently
+                # excluded from rendering by Unreal.
                 section_label = child.section
-                section_name = (
-                    "".join(section_label.split()) if section_label else _DEFAULT_SECTION
-                )
+                section_name = "".join(section_label.split()) if section_label else ""
                 _ensure_section(section_name, section_label)
 
                 entry = unreal.ToolMenuEntry(
-                    name=unreal.Name(_safe_name(child.display_name)),
+                    name=_safe_name(child.display_name),
                     type=unreal.MultiBlockType.MENU_ENTRY,
                     owner=unreal.ToolMenuOwner(unreal.Name(owner_name)),
                 )
@@ -461,7 +582,19 @@ def _populate_menu(owner_name: str, parent_menu, node: MenuNode) -> None:
                     unreal.Name(""),
                     string=f"import runpy; runpy.run_path({repr(child.path)})",
                 )
-                parent_menu.add_menu_entry(unreal.Name(section_name), entry)
+                print(
+                    f"MenuLib: adding entry {child.display_name!r}"
+                    f" to {_parent_path!r}"
+                    + (f" section={section_name!r}" if section_name else "")
+                )
+                try:
+                    parent_menu.add_menu_entry(unreal.Name(section_name), entry)
+                    print(f"MenuLib: OK added {child.display_name!r}")
+                except Exception as entry_exc:
+                    print(
+                        f"MenuLib: failed to add item {child.display_name!r}"
+                        f" to {_parent_path!r}: {entry_exc}"
+                    )
 
         except Exception as exc:
             print(f"MenuLib: failed to add item {child.display_name!r}: {exc}")

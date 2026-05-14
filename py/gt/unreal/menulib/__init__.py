@@ -84,19 +84,6 @@ When a menu item is clicked Unreal executes::
     lib.build()
 
 """
-
-__all__ = [
-    "MenuLib",
-    "MenuNode",
-    "MenuSession",
-    "load_from_env",
-    "ContextMenuLib",
-    "ContextMenuSession",
-    "load_context_from_env",
-    "load_context_from_root",
-    "_registry",
-]
-
 from ._shared import *
 from ._main_menu import *
 from ._context_menu import *

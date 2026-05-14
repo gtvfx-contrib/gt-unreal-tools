@@ -39,7 +39,7 @@ Builds and manages Unreal Engine menus (main menu bar and right-click context me
 | Sub-folder | Nested sub-menu (arbitrarily deep) |
 | `*.py` file | Clickable action item |
 | `<N>_sep.*` file | Separator line |
-| `__menu__.json` sidecar | Display name / sort order override for a folder |
+| `__menu__.json` sidecar | Display name, section, tooltip, and sort order override for a folder |
 | `__inject__.json` sidecar | Injection slot — populate a sub-menu from another env var |
 
 Unreal's `ToolMenus` system uses stable string `Name` paths (e.g. `LevelEditor.MainMenu.MyTools.Animation`) as identifiers, so no GUID management is needed.
@@ -149,16 +149,25 @@ Items sharing the same `# section:` value are grouped under a visible label in t
 
 ### `__menu__.json` — Folder metadata
 
-Place alongside any folder to override its display name and/or sort order:
+Place alongside any folder to control how that sub-menu appears in its parent:
 
 ```json
 {
     "display_name": "My Overridden Title",
+    "section": "Validation",
+    "tooltip": "Tools for validating assets",
     "order": 3.5
 }
 ```
 
-Both keys are optional. If absent the folder's filename (numeric prefix stripped) is used.
+| Key | Type | Description |
+|---|---|---|
+| `display_name` | string | Label shown in the menu. Defaults to the folder name (numeric prefix stripped). |
+| `section` | string | Section name in the **parent** menu where this sub-menu entry appears. Defaults to `"default"`. A visible section header is created automatically. |
+| `tooltip` | string | Hover tooltip for the sub-menu entry. Optional. |
+| `order` | number | Explicit sort position. Defaults to the numeric prefix in the folder name. |
+
+All keys are optional. `section` and `tooltip` mirror the `# section:` / `# tooltip:` header comments supported by `.py` action files.
 
 For `ContextMenuLib`, a `__menu__.json` at the root may also supply `"menu_name"` to override the Unreal context menu path derived from the folder basename:
 
