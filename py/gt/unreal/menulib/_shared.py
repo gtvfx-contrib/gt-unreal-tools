@@ -50,6 +50,9 @@ _TOOLTIP_RE = re.compile(r"^#\s*tooltip\s*:\s*(.+)", re.IGNORECASE)
 _ITEM_ORDER_RE = re.compile(r"^#\s*order\s*:\s*([0-9]*\.?[0-9]+)", re.IGNORECASE)
 _SECTION_RE = re.compile(r"^#\s*section\s*:\s*(.+)", re.IGNORECASE)
 
+# Unreal Engine version prefix (e.g. "5.5.4") used for UE version-specific logic where needed
+UE_VERSION = unreal.SystemLibrary.get_engine_version()[:5]
+
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -76,11 +79,15 @@ class MenuNode:
 def list_menus(search_limit: int = 2000, output: bool = False) -> List[str]:
     """Return a list of all registered menu names."""
     registered_names = set()
+
+    if UE_VERSION >= "5":
+        prefix = "RegisteredMenu_"
+    else:
+        prefix = "ToolMenu_"
     
     # Iterate through potential transient object indices to find registered menus
     for i in range(search_limit):
-        # UE 5.x uses "RegisteredMenu_" while UE 4.x used "ToolMenu_"
-        obj_path = f"/Engine/Transient.ToolMenus_0:RegisteredMenu_{i}"
+        obj_path = f"/Engine/Transient.ToolMenus_0:{prefix}{i}"
         menu_obj = unreal.find_object(None, obj_path)
         
         if menu_obj:
