@@ -8,7 +8,7 @@ Rules:
 from __future__ import annotations
 
 from .base import AbstractRule, Severity, ValidationResult
-from ..env import load_unreal_asset
+from ..env import loadUnrealAsset
 from ..errors import UnrealAPIError
 from ..registry import registry
 
@@ -37,13 +37,13 @@ class StaticMeshLODCountRule(AbstractRule):
             the configured minimum and maximum bounds.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.StaticMesh):
-            return self._make_skipped(asset_path, f"Not a StaticMesh (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a StaticMesh (got {type(asset).__name__}).")
 
         try:
             lod_count = asset.get_num_lods()
@@ -51,26 +51,26 @@ class StaticMeshLODCountRule(AbstractRule):
             max_lods: int = self.config.get("max_lod_count", 8)
 
             if lod_count < min_lods:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=f"StaticMesh has {lod_count} LOD(s) — minimum required is {min_lods}.",
                     asset_class="StaticMesh",
                     fix_hint=f"Add at least {min_lods - lod_count} more LOD level(s) in the Static Mesh Editor.",
                 )
             if lod_count > max_lods:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=f"StaticMesh has {lod_count} LOD(s) — maximum allowed is {max_lods}.",
                     asset_class="StaticMesh",
                     fix_hint=f"Remove {lod_count - max_lods} LOD level(s) to reduce to {max_lods}.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"StaticMesh has {lod_count} LOD(s) — within [{min_lods}, {max_lods}].",
                 asset_class="StaticMesh",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
 @registry.register(category="static_mesh", severity=Severity.WARNING)
@@ -97,32 +97,32 @@ class StaticMeshMaterialSlotRule(AbstractRule):
             slots is within the configured limit.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.StaticMesh):
-            return self._make_skipped(asset_path, f"Not a StaticMesh (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a StaticMesh (got {type(asset).__name__}).")
 
         try:
             slot_count = len(asset.static_materials)
             max_slots: int = self.config.get("max_material_slots", 4)
 
             if slot_count > max_slots:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=f"StaticMesh has {slot_count} material slots — maximum is {max_slots}.",
                     asset_class="StaticMesh",
                     fix_hint="Merge materials in your DCC tool to reduce the material slot count.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"StaticMesh has {slot_count} material slot(s) — within limit of {max_slots}.",
                 asset_class="StaticMesh",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
 @registry.register(category="static_mesh", severity=Severity.WARNING)
@@ -149,13 +149,13 @@ class StaticMeshBoundsRule(AbstractRule):
             is within the configured limit.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.StaticMesh):
-            return self._make_skipped(asset_path, f"Not a StaticMesh (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a StaticMesh (got {type(asset).__name__}).")
 
         try:
             bounds = asset.get_bounding_box()
@@ -164,7 +164,7 @@ class StaticMeshBoundsRule(AbstractRule):
             max_uu: float = self.config.get("max_bounds_extent_uu", 500.0)
 
             if max_component > max_uu:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=(
                         f"Bounds extent {max_component:.1f} UU exceeds limit {max_uu} UU "
@@ -173,10 +173,10 @@ class StaticMeshBoundsRule(AbstractRule):
                     asset_class="StaticMesh",
                     fix_hint="Check the mesh scale — it may have been imported with incorrect units.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"Bounds extent {max_component:.1f} UU — within limit of {max_uu} UU.",
                 asset_class="StaticMesh",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")

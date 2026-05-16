@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 
 from .base import AbstractRule, Severity, ValidationResult
-from ..env import load_unreal_asset
+from ..env import loadUnrealAsset
 from ..errors import UnrealAPIError
 from ..registry import registry
 
@@ -47,10 +47,10 @@ class OverdrawHeuristicRule(AbstractRule):
             to cause excessive overdraw based on translucent material usage.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         try:
             if isinstance(asset, unreal.StaticMesh):
@@ -58,9 +58,9 @@ class OverdrawHeuristicRule(AbstractRule):
             if isinstance(asset, unreal.Material):
                 return self._check_material(asset_path, asset)
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
-        return self._make_skipped(
+        return self._makeSkipped(
             asset_path,
             f"Overdraw heuristic not applicable to {type(asset).__name__}."
         )
@@ -76,7 +76,7 @@ class OverdrawHeuristicRule(AbstractRule):
             A :class:`ValidationResult` indicating whether the translucent
             material slot count is within the configured limit.
         """
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
         try:
             max_translucent: int = self.config.get("max_translucent_materials", 2)
             slots = asset.static_materials or []
@@ -108,7 +108,7 @@ class OverdrawHeuristicRule(AbstractRule):
                     logger.debug("Skipping material slot for '%s': %s", asset_path, exc)
 
             if translucent_count > max_translucent:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=(
                         f"StaticMesh has {translucent_count} translucent material slot(s) — "
@@ -120,13 +120,13 @@ class OverdrawHeuristicRule(AbstractRule):
                         "where possible, or split the mesh into opaque and translucent sections."
                     ),
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"StaticMesh has {translucent_count} translucent material(s) — within limit.",
                 asset_class="StaticMesh",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
     def _check_material(self, asset_path: str, asset) -> ValidationResult:
         """Check a Material asset's blend mode directly.
@@ -139,7 +139,7 @@ class OverdrawHeuristicRule(AbstractRule):
             A :class:`ValidationResult` indicating whether the material blend
             mode poses an overdraw risk.
         """
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
         try:
             blend = asset.blend_mode
             is_translucent = blend in (
@@ -148,16 +148,16 @@ class OverdrawHeuristicRule(AbstractRule):
                 unreal.BlendMode.BLEND_MODULATE,
             )
             if is_translucent:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=f"Material uses translucent blend mode '{blend}' — overdraw risk.",
                     asset_class="Material",
                     fix_hint="Use Opaque or Masked blend mode unless transparency is essential.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"Material blend mode '{blend}' — low overdraw risk.",
                 asset_class="Material",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")

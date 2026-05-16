@@ -15,10 +15,10 @@ class UnrealAPIError(RuntimeError):
     (e.g. ``EditorAssetLibrary`` calls) into a single, predictable type.
 
     Examples:
-        >>> from validator.env import load_unreal_asset
+        >>> from validator.env import loadUnrealAsset
         >>> from validator.errors import UnrealAPIError
         >>> try:
-        ...     asset = load_unreal_asset("/Game/Meshes/SM_Rock")
+        ...     asset = loadUnrealAsset("/Game/Meshes/SM_Rock")
         ... except UnrealAPIError as exc:
         ...     print(f"Skipping asset: {exc}")
     """

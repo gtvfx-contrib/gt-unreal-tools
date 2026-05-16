@@ -69,7 +69,12 @@ class AllowlistEntry:
                     expires, rule, asset,
                 )
 
-    def is_expired(self) -> bool:
+    @property
+    def expiresStr(self) -> str | None:
+        """Optional expiry date string in ``YYYY-MM-DD`` format."""
+        return self._expires_str
+
+    def isExpired(self) -> bool:
         """Return True if this entry has passed its expiry date."""
         if self._expires is None:
             return False
@@ -93,8 +98,8 @@ class AllowlistManager:
         from validator.allowlist import AllowlistManager
 
         manager = AllowlistManager(config)
-        if manager.is_allowed("material_blend_mode", "/Game/M_HeroSkin"):
-            return self._make_result(asset_path, passed=True, message="Allowlisted.")
+        if manager.isAllowed("material_blend_mode", "/Game/M_HeroSkin"):
+            return self._makeResult(asset_path, passed=True, message="Allowlisted.")
     """
 
     def __init__(self, config: "Config") -> None:
@@ -117,17 +122,17 @@ class AllowlistManager:
                 author  = raw.get("author", ""),
                 expires = raw.get("expires"),
             )
-            if entry.is_expired():
+            if entry.isExpired():
                 logger.warning(
                     "[Allowlist] Expired entry skipped: rule=%s asset=%s expired=%s",
-                    entry.rule, entry.asset, entry._expires_str,
+                    entry.rule, entry.asset, entry.expiresStr,
                 )
             else:
                 self._entries.append(entry)
 
         logger.debug("[Allowlist] Loaded %d active entries.", len(self._entries))
 
-    def is_allowed(self, rule_name: str, asset_path: str) -> bool:
+    def isAllowed(self, rule_name: str, asset_path: str) -> bool:
         """Return ``True`` if the combination matches an active allowlist entry.
 
         Matching is exact on both rule name and asset path.
@@ -145,7 +150,7 @@ class AllowlistManager:
                 return True
         return False
 
-    def get_entry(self, rule_name: str, asset_path: str) -> AllowlistEntry | None:
+    def getEntry(self, rule_name: str, asset_path: str) -> AllowlistEntry | None:
         """Return the matching :class:`AllowlistEntry`, or ``None``.
 
         Args:

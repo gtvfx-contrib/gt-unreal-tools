@@ -26,10 +26,10 @@ runner  = ValidationRunner(config, max_workers=1)
 # Replace with your project's actual content path.
 CONTENT_PATH = "/Game"
 
-report = runner.run_and_report(CONTENT_PATH)
+report = runner.runAndReport(CONTENT_PATH)
 unreal.log(ConsoleFormatter(show_passing=False).format(report))
 
-if report.has_errors():
+if report.hasErrors():
     unreal.log("[Validator] Validation FAILED — see failures above.")
 else:
     unreal.log("[Validator] Validation PASSED.")

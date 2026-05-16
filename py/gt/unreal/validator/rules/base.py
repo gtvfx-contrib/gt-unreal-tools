@@ -74,7 +74,7 @@ class AbstractRule(ABC):
     """Abstract base class for all validation rules.
 
     Subclasses must implement :meth:`validate`.  Helper methods
-    :meth:`_make_result` and :meth:`_make_skipped` produce correctly
+    :meth:`_makeResult` and :meth:`_makeSkipped` produce correctly
     structured :class:`ValidationResult` instances.
 
     Attributes:
@@ -102,7 +102,7 @@ class AbstractRule(ABC):
         """
         ...
 
-    def _make_result(
+    def _makeResult(
         self,
         asset_path: str,
         passed: bool,
@@ -137,7 +137,7 @@ class AbstractRule(ABC):
             fix_hint=fix_hint,
         )
 
-    def _make_skipped(self, asset_path: str, reason: str) -> ValidationResult:
+    def _makeSkipped(self, asset_path: str, reason: str) -> ValidationResult:
         """Build a skipped :class:`ValidationResult`.
 
         Args:

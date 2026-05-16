@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 
 from .base import AbstractRule, Severity, ValidationResult
-from ..env import load_unreal_asset
+from ..env import loadUnrealAsset
 from ..errors import UnrealAPIError
 from ..registry import registry
 
@@ -41,13 +41,13 @@ class NiagaraEmitterCountRule(AbstractRule):
             is within the configured limit.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.NiagaraSystem):
-            return self._make_skipped(
+            return self._makeSkipped(
                 asset_path, f"Not a NiagaraSystem (got {type(asset).__name__})."
             )
 
@@ -57,7 +57,7 @@ class NiagaraEmitterCountRule(AbstractRule):
             max_emitters: int = self.config.get("max_niagara_emitters", 8)
 
             if emitter_count > max_emitters:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=f"Niagara system has {emitter_count} emitters — limit is {max_emitters}.",
                     asset_class="NiagaraSystem",
@@ -66,13 +66,13 @@ class NiagaraEmitterCountRule(AbstractRule):
                         f"by merging similar emitters."
                     ),
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"Niagara system has {emitter_count} emitter(s) — within limit of {max_emitters}.",
                 asset_class="NiagaraSystem",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
 @registry.register(category="niagara", severity=Severity.ERROR)
@@ -103,27 +103,27 @@ class NiagaraFixedBoundsRule(AbstractRule):
         """
         require_fixed: bool = self.config.get("require_niagara_fixed_bounds", True)
         if not require_fixed:
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message="Fixed bounds check disabled via config.",
                 asset_class="NiagaraSystem",
             )
 
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.NiagaraSystem):
-            return self._make_skipped(
+            return self._makeSkipped(
                 asset_path, f"Not a NiagaraSystem (got {type(asset).__name__})."
             )
 
         try:
             fixed_bounds = asset.get_editor_property("fixed_bounds")
             if not fixed_bounds:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message="Niagara system does not have fixed bounds set.",
                     asset_class="NiagaraSystem",
@@ -132,13 +132,13 @@ class NiagaraFixedBoundsRule(AbstractRule):
                         "appropriate values to avoid per-frame bounds calculation."
                     ),
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message="Niagara system has fixed bounds configured.",
                 asset_class="NiagaraSystem",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
 @registry.register(category="niagara", severity=Severity.WARNING)
@@ -165,13 +165,13 @@ class NiagaraGPUSimRule(AbstractRule):
             comply with the project policy.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.NiagaraSystem):
-            return self._make_skipped(
+            return self._makeSkipped(
                 asset_path, f"Not a NiagaraSystem (got {type(asset).__name__})."
             )
 
@@ -191,7 +191,7 @@ class NiagaraGPUSimRule(AbstractRule):
                     logger.debug("Skipping emitter handle for '%s': %s", asset_path, exc)
 
             if gpu_emitters and not allow_gpu:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=(
                         f"GPU simulation is disabled by policy, but {len(gpu_emitters)} "
@@ -202,15 +202,15 @@ class NiagaraGPUSimRule(AbstractRule):
                 )
 
             if gpu_emitters:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=True,
                     message=f"{len(gpu_emitters)} GPU emitter(s) detected — GPU simulation is allowed.",
                     asset_class="NiagaraSystem",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message="No GPU simulation emitters detected.",
                 asset_class="NiagaraSystem",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")

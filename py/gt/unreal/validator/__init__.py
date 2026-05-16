@@ -2,11 +2,11 @@
 
 Public API::
 
-    from validator import ValidationRunner, Config, ValidationReport
+    from gt.unreal.validator import ValidationRunner, Config, ValidationReport
 
     runner = ValidationRunner(Config())
-    report = runner.run_and_report("/path/to/assets")
-    print(report.summary_line())
+    report = runner.runAndReport("/path/to/assets")
+    print(report.summaryLine())
     
 """
 __version__ = "0.0.13"

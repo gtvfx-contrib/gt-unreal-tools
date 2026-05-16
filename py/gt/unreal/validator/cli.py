@@ -32,7 +32,7 @@ _FORMATTERS = {
 }
 
 
-def build_parser() -> argparse.ArgumentParser:
+def buildParser() -> argparse.ArgumentParser:
     """Build and return the CLI argument parser.
 
     Returns:
@@ -109,6 +109,7 @@ exit codes:
     parser.add_argument(
         "--list-rules",
         action="store_true",
+        dest="listRules",
         help="List all registered rules and exit.",
     )
     return parser
@@ -127,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     """
     import logging
 
-    parser = build_parser()
+    parser = buildParser()
     args = parser.parse_args(argv)
 
     config_path = args.config or os.environ.get("VALIDATOR_CONFIG_PATH")
@@ -143,10 +144,10 @@ def main(argv: list[str] | None = None) -> int:
     ).upper()
     logging.basicConfig(level=getattr(logging, log_level, logging.WARNING))
 
-    if args.list_rules:
+    if args.listRules:
         from .registry import registry
         registry.discover()
-        rules = registry.list_rules()
+        rules = registry.listRules()
         if not rules:
             print("No rules registered.")
         else:
@@ -176,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
         max_workers=max_workers,
     )
 
-    report: ValidationReport = runner.run_and_report(args.directory)
+    report: ValidationReport = runner.runAndReport(args.directory)
 
     formatter_cls = _FORMATTERS.get(fmt, ConsoleFormatter)
     formatter = formatter_cls(show_passing=args.show_passing or config.get("show_passing", False))
@@ -194,7 +195,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(output_text)
 
-    if report.has_errors():
+    if report.hasErrors():
         return 1
     return 0
 

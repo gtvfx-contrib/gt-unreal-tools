@@ -5,6 +5,7 @@ Implements:
 - :class:`ConsoleFormatter` — human-readable terminal output
 - :class:`JSONFormatter` — machine-readable JSON output
 - :class:`HTMLFormatter` — self-contained HTML report for CI artifacts
+
 """
 from __future__ import annotations
 
@@ -80,7 +81,7 @@ class ConsoleFormatter:
             lines.append("")
 
         lines.append(sep)
-        lines.append(f"  {report.summary_line()}")
+        lines.append(f"  {report.summaryLine()}")
         lines.append(f"  Rules run      : {report.rule_count}")
         lines.append(f"  Assets checked : {report.asset_count}")
         lines.append(f"  Duration       : {report.duration_ms:.0f}ms")
@@ -130,7 +131,7 @@ class JSONFormatter:
             "generated_at":  datetime.now().isoformat(),
             "tool_version":  report.tool_version,
             "summary": {
-                "status":       "FAIL" if report.has_errors() else "PASS",
+                "status":       "FAIL" if report.hasErrors() else "PASS",
                 "asset_count":  report.asset_count,
                 "rule_count":   report.rule_count,
                 "duration_ms":  round(report.duration_ms, 3),
@@ -167,8 +168,8 @@ class HTMLFormatter:
             A complete HTML document string suitable for saving as a
             ``.html`` file.
         """
-        status     = "FAIL" if report.has_errors() else "PASS"
-        status_cls = "fail" if report.has_errors() else "pass"
+        status     = "FAIL" if report.hasErrors() else "PASS"
+        status_cls = "fail" if report.hasErrors() else "pass"
         generated  = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         rows = []

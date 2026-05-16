@@ -23,7 +23,7 @@ from .errors import UnrealAPIError
 logger = logging.getLogger(__name__)
 
 
-def _detect_unreal() -> bool:
+def _detectUnreal() -> bool:
     """Return True if the 'unreal' module is importable (i.e., inside UE)."""
     try:
         import unreal  # noqa: F401
@@ -32,10 +32,10 @@ def _detect_unreal() -> bool:
         return False
 
 
-UNREAL_AVAILABLE: bool = _detect_unreal()
+UNREAL_AVAILABLE: bool = _detectUnreal()
 
 
-def log_env_status() -> None:
+def logEnvStatus() -> None:
     """Log the environment status to the root logger."""
     if UNREAL_AVAILABLE:
         logger.info("[env] Running inside Unreal Engine — Unreal Python API available.")
@@ -43,7 +43,7 @@ def log_env_status() -> None:
         logger.info("[env] Running in standalone mode — Unreal Python API NOT available.")
 
 
-def require_unreal(msg: str = "") -> None:
+def requireUnreal(msg: str = "") -> None:
     """Raise ``ImportError`` if Unreal is not available.
 
     Use this at the start of functions that absolutely require Unreal.
@@ -62,7 +62,7 @@ def require_unreal(msg: str = "") -> None:
         )
 
 
-def load_unreal_asset(asset_path: str) -> Any:
+def loadUnrealAsset(asset_path: str) -> Any:
     """Load an Unreal Engine asset by its content-browser path.
 
     Provides a single, audited point for the broad ``except Exception``

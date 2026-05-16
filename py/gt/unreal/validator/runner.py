@@ -14,6 +14,7 @@ import os
 import time
 from typing import Iterator, Type
 
+from .allowlist import AllowlistManager
 from .config import Config
 from .registry import registry
 from .rules.base import AbstractRule, ValidationResult, Severity
@@ -52,9 +53,9 @@ class ValidationRunner:
             max_workers: Number of worker threads.  ``1`` = serial (safe in
                 Unreal).  Default: ``VALIDATOR_MAX_WORKERS`` env var or CPU count.
         """
-        self.config    = config
-        self.context   = context
-        self.allowlist = allowlist
+        self.config = config
+        self.context = context
+        self.allowlist = allowlist or AllowlistManager(config)
         self.max_workers = max_workers or int(
             os.environ.get("VALIDATOR_MAX_WORKERS", os.cpu_count() or 4)
         )
@@ -63,16 +64,16 @@ class ValidationRunner:
             self.rules = [R(config) for R in rules]
         else:
             registry.discover()
-            rule_classes = registry.get_rules(category=category, severity=severity)
+            rule_classes = registry.getRules(category=category, severity=severity)
             if not rule_classes:
                 logger.warning(
                     "[ValidationRunner] No rules matched "
                     "(category=%r, severity=%r). Registered: %s",
-                    category, severity, list(registry.list_rules().keys()),
+                    category, severity, list(registry.listRules().keys()),
                 )
             self.rules = [R(config) for R in rule_classes]
 
-    def validate_asset(self, asset_path: str) -> list[ValidationResult]:
+    def validateAsset(self, asset_path: str) -> list[ValidationResult]:
         """Run every active rule against a single asset path.
 
         Args:
@@ -83,13 +84,18 @@ class ValidationRunner:
         """
         results = []
         for rule in self.rules:
+            if self.allowlist and self.allowlist.isAllowed(rule.name, asset_path):
+                entry = self.allowlist.getEntry(rule.name, asset_path)
+                reason = f"Allowlisted: {entry.reason}" if entry else "Allowlisted."
+                results.append(rule._makeSkipped(asset_path, reason))
+                continue
             t0 = time.perf_counter()
             result = rule.validate(asset_path)
             result.duration_ms = (time.perf_counter() - t0) * 1000
             results.append(result)
         return results
 
-    def run_and_report(self, directory: str) -> ValidationReport:
+    def runAndReport(self, directory: str) -> ValidationReport:
         """Validate a directory and return an aggregated report.
 
         Assets are validated concurrently using a thread pool.  The number of
@@ -109,19 +115,19 @@ class ValidationRunner:
         """
         from . import __version__
         t0 = time.perf_counter()
-        assets = list(self._iter_assets(directory))
+        assets = list(self._iterAssets(directory))
 
         if self.max_workers == 1:
             all_results: list[ValidationResult] = []
             for asset_path in assets:
-                all_results.extend(self.validate_asset(asset_path))
+                all_results.extend(self.validateAsset(asset_path))
         else:
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=self.max_workers,
                 thread_name_prefix="validator",
             ) as executor:
                 futures = {
-                    executor.submit(self.validate_asset, path): path
+                    executor.submit(self.validateAsset, path): path
                     for path in assets
                 }
                 all_results = []
@@ -141,7 +147,7 @@ class ValidationRunner:
             tool_version=__version__,
         )
 
-    def _iter_assets(self, directory: str) -> Iterator[str]:
+    def _iterAssets(self, directory: str) -> Iterator[str]:
         """Yield asset paths from a directory.
 
         Handles both real filesystem paths and Unreal virtual content paths

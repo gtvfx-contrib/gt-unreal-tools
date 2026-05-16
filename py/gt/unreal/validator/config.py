@@ -109,18 +109,18 @@ class Config:
         self._data: dict[str, Any] = dict(DEFAULTS)
 
         if config_path:
-            json_data = self._load_json(config_path)
+            json_data = self._loadJson(config_path)
             self._data.update(json_data)
 
-        env_data = self._load_env()
+        env_data = self._loadEnv()
         self._data.update(env_data)
 
         if validate:
-            self._validate_schema()
+            self._validateSchema()
 
         logger.debug("[Config] Initialized with %d keys.", len(self._data))
 
-    def _load_json(self, path: str) -> dict[str, Any]:
+    def _loadJson(self, path: str) -> dict[str, Any]:
         """Load and return config values from a JSON file.
 
         Args:
@@ -145,7 +145,7 @@ class Config:
         except json.JSONDecodeError as exc:
             raise ValueError(f"Malformed JSON in config '{path}': {exc}") from exc
 
-    def _load_env(self) -> dict[str, Any]:
+    def _loadEnv(self) -> dict[str, Any]:
         """Read ``VALIDATOR_<KEY>`` environment variables and coerce types.
 
         Returns:
@@ -197,7 +197,7 @@ class Config:
             )
         return raw
 
-    def _validate_schema(self) -> None:
+    def _validateSchema(self) -> None:
         """Eagerly fail with a clear error if config values have wrong types."""
         errors = []
         for key, expected_type in CONFIG_SCHEMA.items():

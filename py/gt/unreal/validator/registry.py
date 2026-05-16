@@ -90,7 +90,7 @@ class RuleRegistry:
                     "[Registry] Could not import '%s': %s", full_name, exc
                 )
 
-    def get_rules(
+    def getRules(
         self,
         category: str | None = None,
         severity=None,
@@ -111,7 +111,7 @@ class RuleRegistry:
             rules = [r for r in rules if r.severity == severity]
         return rules
 
-    def list_rules(self) -> dict[str, Type]:
+    def listRules(self) -> dict[str, Type]:
         """Return a copy of the rules dict {name: class}."""
         return dict(self._rules)
 

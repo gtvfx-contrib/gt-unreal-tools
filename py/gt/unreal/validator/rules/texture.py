@@ -7,9 +7,14 @@ Rules:
 from __future__ import annotations
 
 from .base import AbstractRule, Severity, ValidationResult
-from ..env import load_unreal_asset
+from ..env import loadUnrealAsset
 from ..errors import UnrealAPIError
 from ..registry import registry
+
+
+def _isPowerOfTwo(n: int) -> bool:
+    """Return True if n is a positive power of two."""
+    return n > 0 and (n & (n - 1)) == 0
 
 
 @registry.register(category="texture", severity=Severity.ERROR)
@@ -36,46 +41,43 @@ class TextureDimensionRule(AbstractRule):
             are power-of-two and within the configured maximum.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.Texture2D):
-            return self._make_skipped(asset_path, f"Not a Texture2D (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a Texture2D (got {type(asset).__name__}).")
 
         try:
             width  = asset.blueprint_get_size_x()
             height = asset.blueprint_get_size_y()
             max_dim: int = self.config.get("max_texture_dimension", 4096)
 
-            def is_power_of_two(n: int) -> bool:
-                return n > 0 and (n & (n - 1)) == 0
-
             issues = []
             if width > max_dim or height > max_dim:
                 issues.append(
                     f"Dimensions {width}x{height} exceed max {max_dim}x{max_dim}."
                 )
-            if not is_power_of_two(width) or not is_power_of_two(height):
+            if not _isPowerOfTwo(width) or not _isPowerOfTwo(height):
                 issues.append(
                     f"Dimensions {width}x{height} are not powers of two."
                 )
 
             if issues:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=" ".join(issues),
                     asset_class="Texture2D",
                     fix_hint=f"Resize texture to a power-of-two dimension <= {max_dim}px.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"Texture dimensions {width}x{height} are valid.",
                 asset_class="Texture2D",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
 @registry.register(category="texture", severity=Severity.WARNING)
@@ -104,13 +106,13 @@ class TextureCompressionRule(AbstractRule):
             is appropriate for the detected texture type.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.Texture2D):
-            return self._make_skipped(asset_path, f"Not a Texture2D (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a Texture2D (got {type(asset).__name__}).")
 
         try:
             compression = asset.compression_settings
@@ -125,7 +127,7 @@ class TextureCompressionRule(AbstractRule):
             )
 
             if is_normal_map and compression != unreal.TextureCompressionSettings.TC_NORMALMAP:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=(
                         f"Normal map texture uses compression '{compression}' — "
@@ -135,10 +137,10 @@ class TextureCompressionRule(AbstractRule):
                     fix_hint="Set Compression Settings to 'Normalmap (DXT5, BC5 on DX11)' in the Texture Editor.",
                 )
 
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"Texture compression '{compression}' is acceptable.",
                 asset_class="Texture2D",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")

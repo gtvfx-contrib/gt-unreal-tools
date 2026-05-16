@@ -9,7 +9,7 @@ Rules:
 from __future__ import annotations
 
 from .base import AbstractRule, Severity, ValidationResult
-from ..env import load_unreal_asset
+from ..env import loadUnrealAsset
 from ..errors import UnrealAPIError
 from ..registry import registry
 
@@ -41,13 +41,13 @@ class MaterialBlendModeRule(AbstractRule):
             acceptable blend mode.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.Material):
-            return self._make_skipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
 
         try:
             blend_mode = asset.blend_mode
@@ -58,7 +58,7 @@ class MaterialBlendModeRule(AbstractRule):
             )
 
             if is_translucent:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=(
                         f"Material uses translucent blend mode '{blend_mode}'. "
@@ -67,13 +67,13 @@ class MaterialBlendModeRule(AbstractRule):
                     asset_class="Material",
                     fix_hint="Consider using Masked or Opaque blend mode if transparency is not essential.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"Material blend mode '{blend_mode}' is acceptable.",
                 asset_class="Material",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
 @registry.register(category="material", severity=Severity.INFO)
@@ -102,29 +102,29 @@ class MaterialTwoSidedRule(AbstractRule):
             is disabled on the material.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.Material):
-            return self._make_skipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
 
         try:
             if asset.two_sided:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message="Material has Two-Sided rendering enabled — increases draw call cost.",
                     asset_class="Material",
                     fix_hint="Disable Two-Sided unless required (e.g., foliage). Consider geometry normals instead.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message="Material Two-Sided is disabled.",
                 asset_class="Material",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
 @registry.register(category="material", severity=Severity.WARNING)
@@ -151,13 +151,13 @@ class MaterialTextureSampleRule(AbstractRule):
             samples is within the configured limit.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.Material):
-            return self._make_skipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
 
         try:
             expressions = asset.get_editor_property("expressions") or []
@@ -168,19 +168,19 @@ class MaterialTextureSampleRule(AbstractRule):
             max_samples: int = self.config.get("max_texture_samples", 16)
 
             if sample_count > max_samples:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=f"Material has {sample_count} texture samples — limit is {max_samples}.",
                     asset_class="Material",
                     fix_hint="Consolidate texture channels into packed textures to reduce sample count.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"Material has {sample_count} texture sample(s) — within limit of {max_samples}.",
                 asset_class="Material",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
 @registry.register(category="material", severity=Severity.WARNING)
@@ -219,13 +219,13 @@ class MaterialExpensiveNodeRule(AbstractRule):
             nodes were detected in the material expression graph.
         """
         try:
-            asset = load_unreal_asset(asset_path)
+            asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
-            return self._make_skipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because load_unreal_asset guarantees Unreal is available
+            return self._makeSkipped(asset_path, str(exc))
+        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
 
         if not isinstance(asset, unreal.Material):
-            return self._make_skipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
+            return self._makeSkipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
 
         try:
             expressions = asset.get_editor_property("expressions") or []
@@ -236,16 +236,16 @@ class MaterialExpensiveNodeRule(AbstractRule):
             ]
 
             if expensive:
-                return self._make_result(
+                return self._makeResult(
                     asset_path, passed=False,
                     message=f"Material contains expensive nodes: {expensive}.",
                     asset_class="Material",
                     fix_hint="Consider baking expensive operations into textures using Bake Material Attributes.",
                 )
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message="No expensive material nodes detected.",
                 asset_class="Material",
             )
         except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
-            return self._make_skipped(asset_path, f"Validation error: {exc}")
+            return self._makeSkipped(asset_path, f"Validation error: {exc}")

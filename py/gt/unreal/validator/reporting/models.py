@@ -18,6 +18,7 @@ class ValidationReport:
         rule_count: Number of rules that ran.
         duration_ms: Wall-clock time for the full run in milliseconds.
         tool_version: Framework version string.
+        
     """
     results:      list[ValidationResult]
     asset_count:  int   = 0
@@ -69,13 +70,13 @@ class ValidationReport:
             if not r.passed and not r.skipped and r.severity == Severity.INFO
         )
 
-    def has_errors(self) -> bool:
+    def hasErrors(self) -> bool:
         """Return True if any ERROR-severity rule failed."""
         return self.errors > 0
 
-    def summary_line(self) -> str:
+    def summaryLine(self) -> str:
         """Single-line human-readable summary."""
-        status = "FAIL" if self.has_errors() else "PASS"
+        status = "FAIL" if self.hasErrors() else "PASS"
         return (
             f"[{status}] {self.asset_count} assets | "
             f"{self.failed} failures ({self.errors} errors, {self.warnings} warnings) | "
@@ -83,7 +84,7 @@ class ValidationReport:
             f"{self.duration_ms:.0f}ms"
         )
 
-    def filter_by_severity(self, severity: Severity) -> list[ValidationResult]:
+    def filterBySeverity(self, severity: Severity) -> list[ValidationResult]:
         """Return only results matching the given severity.
 
         Args:
@@ -95,7 +96,7 @@ class ValidationReport:
         """
         return [r for r in self.results if r.severity == severity]
 
-    def filter_by_category(self, category: str) -> list[ValidationResult]:
+    def filterByCategory(self, category: str) -> list[ValidationResult]:
         """Return only results matching the given category.
 
         Args:
@@ -115,7 +116,7 @@ class ValidationReport:
         """Return only passed (non-skipped) results."""
         return [r for r in self.results if r.passed and not r.skipped]
 
-    def assets_with_failures(self) -> dict[str, list[ValidationResult]]:
+    def assetsWithFailures(self) -> dict[str, list[ValidationResult]]:
         """Group failed results by asset path."""
         grouped: dict[str, list[ValidationResult]] = {}
         for r in self.failures():

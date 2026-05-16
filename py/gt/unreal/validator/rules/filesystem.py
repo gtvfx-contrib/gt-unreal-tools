@@ -39,7 +39,7 @@ class FileSizeRule(AbstractRule):
 
         # Filesystem size check requires a real disk path.
         if not os.path.exists(asset_path):
-            return self._make_skipped(
+            return self._makeSkipped(
                 asset_path,
                 "FileSizeRule skipped: not a filesystem path. "
                 "File size is managed by Unreal when running inside the Editor."
@@ -49,7 +49,7 @@ class FileSizeRule(AbstractRule):
         size_mb = size_bytes / (1024 * 1024)
 
         if size_mb > max_mb:
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=False,
                 message=f"File size {size_mb:.2f} MB exceeds limit of {max_mb} MB.",
                 fix_hint=(
@@ -57,7 +57,7 @@ class FileSizeRule(AbstractRule):
                     f"file size below {max_mb} MB."
                 ),
             )
-        return self._make_result(
+        return self._makeResult(
             asset_path, passed=True,
             message=f"File size {size_mb:.2f} MB is within limit of {max_mb} MB.",
         )
@@ -92,7 +92,7 @@ class ValidExtensionRule(AbstractRule):
         # Extension check on Unreal content paths is not meaningful —
         # all .uasset files have the same extension on disk.
         if not os.path.exists(asset_path):
-            return self._make_skipped(
+            return self._makeSkipped(
                 asset_path,
                 "ValidExtensionRule skipped: not a filesystem path. "
                 "Asset type is available via AssetData.asset_class in Unreal."
@@ -103,11 +103,11 @@ class ValidExtensionRule(AbstractRule):
         )
 
         if ext in valid_exts:
-            return self._make_result(
+            return self._makeResult(
                 asset_path, passed=True,
                 message=f"Extension '{ext}' is in the approved list.",
             )
-        return self._make_result(
+        return self._makeResult(
             asset_path, passed=False,
             message=f"Extension '{ext}' is not in approved list: {valid_exts}.",
             fix_hint=f"Convert or remove this file. Approved types: {', '.join(valid_exts)}.",
