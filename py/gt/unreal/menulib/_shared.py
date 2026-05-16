@@ -96,9 +96,9 @@ def list_menus(search_limit: int = 2000, output: bool = False) -> List[str]:
                 registered_names.add(name)
 
     if output:
-        print("Registered menus:")
+        unreal.log("Registered menus:")
         for name in sorted(registered_names):
-            print(f" - {name}")
+            unreal.log(f" - {name}")
                 
     return sorted(list(registered_names))
 
