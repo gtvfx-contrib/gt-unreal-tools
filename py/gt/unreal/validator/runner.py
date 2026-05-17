@@ -5,6 +5,7 @@ them against assets in a directory.  Supports both serial mode (safe inside
 Unreal Editor) and parallel mode via :class:`concurrent.futures.ThreadPoolExecutor`.
 The number of worker threads is controlled by the ``max_workers`` constructor
 argument or the ``VALIDATOR_MAX_WORKERS`` environment variable.
+
 """
 from __future__ import annotations
 
@@ -14,7 +15,6 @@ import os
 import time
 from typing import Iterator, Type
 
-from .allowlist import AllowlistManager
 from .config import Config
 from .registry import registry
 from .rules.base import AbstractRule, ValidationResult, Severity
@@ -29,6 +29,7 @@ class ValidationRunner:
     Discovers rules from the registry, instantiates them with the provided
     configuration, and runs them against assets in a directory — optionally
     using a thread pool for parallel processing.
+    
     """
 
     def __init__(
@@ -52,10 +53,11 @@ class ValidationRunner:
             allowlist: Optional AllowlistManager instance.
             max_workers: Number of worker threads.  ``1`` = serial (safe in
                 Unreal).  Default: ``VALIDATOR_MAX_WORKERS`` env var or CPU count.
+        
         """
-        self.config = config
-        self.context = context
-        self.allowlist = allowlist or AllowlistManager(config)
+        self.config    = config
+        self.context   = context
+        self.allowlist = allowlist
         self.max_workers = max_workers or int(
             os.environ.get("VALIDATOR_MAX_WORKERS", os.cpu_count() or 4)
         )
@@ -81,19 +83,77 @@ class ValidationRunner:
 
         Returns:
             A list of :class:`ValidationResult` objects, one per rule.
+        
         """
         results = []
         for rule in self.rules:
-            if self.allowlist and self.allowlist.isAllowed(rule.name, asset_path):
-                entry = self.allowlist.getEntry(rule.name, asset_path)
-                reason = f"Allowlisted: {entry.reason}" if entry else "Allowlisted."
-                results.append(rule._makeSkipped(asset_path, reason))
-                continue
             t0 = time.perf_counter()
             result = rule.validate(asset_path)
             result.duration_ms = (time.perf_counter() - t0) * 1000
             results.append(result)
         return results
+
+    def validateAssets(self, asset_paths: list[str]) -> ValidationReport:
+        """Validate an explicit list of asset paths and return an aggregated report.
+
+        Useful when the caller already has a list of paths (e.g. the current
+        selection in Unreal's Content Browser) rather than a directory to walk.
+
+        Args:
+            asset_paths: Explicit list of filesystem or content-browser paths.
+
+        Returns:
+            A :class:`ValidationReport` aggregating all rule results.
+
+        """
+        from . import __version__
+        t0 = time.perf_counter()
+        all_results: list[ValidationResult] = []
+        for asset_path in asset_paths:
+            all_results.extend(self.validateAsset(asset_path))
+        duration = (time.perf_counter() - t0) * 1000
+        return ValidationReport(
+            results=all_results,
+            asset_count=len(asset_paths),
+            rule_count=len(self.rules),
+            duration_ms=duration,
+            tool_version=__version__,
+        )
+
+    def runAndReportFolders(self, folders: list[str]) -> ValidationReport:
+        """Validate multiple folders and return a combined report.
+
+        Accepts a list of content-browser or filesystem folder paths (e.g. the
+        result of ``EditorUtilityLibrary.get_selected_path_view_folder_paths()``).
+        Assets that appear under more than one folder are validated only once.
+
+        Args:
+            folders: List of filesystem or content-browser folder paths.
+
+        Returns:
+            A :class:`ValidationReport` aggregating all rule results.
+
+        """
+        from . import __version__
+        t0 = time.perf_counter()
+        seen: set[str] = set()
+        assets: list[str] = []
+        for folder in folders:
+            for asset_path in self._iterAssets(folder):
+                if asset_path not in seen:
+                    seen.add(asset_path)
+                    assets.append(asset_path)
+        all_results: list[ValidationResult] = []
+        for asset_path in assets:
+            all_results.extend(self.validateAsset(asset_path))
+        duration = (time.perf_counter() - t0) * 1000
+        return ValidationReport(
+            results=all_results,
+            asset_count=len(assets),
+            rule_count=len(self.rules),
+            duration_ms=duration,
+            tool_version=__version__,
+        )
 
     def runAndReport(self, directory: str) -> ValidationReport:
         """Validate a directory and return an aggregated report.
@@ -112,6 +172,7 @@ class ValidationRunner:
 
         Returns:
             A :class:`ValidationReport` aggregating all rule results.
+        
         """
         from . import __version__
         t0 = time.perf_counter()
@@ -134,7 +195,7 @@ class ValidationRunner:
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         all_results.extend(future.result())
-                    except Exception as exc:  # noqa: BLE001 – thread boundary safety net; workers may raise any exception
+                    except Exception as exc:  # noqa: BLE001 - thread boundary
                         asset_path = futures[future]
                         logger.error("[Runner] Error validating '%s': %s", asset_path, exc)
 
@@ -163,6 +224,7 @@ class ValidationRunner:
         Raises:
             ValueError: If directory is neither a valid filesystem directory
                 nor a resolvable Unreal content path.
+        
         """
         from .env import UNREAL_AVAILABLE
 
@@ -173,11 +235,10 @@ class ValidationRunner:
                     f"is not available.  Run inside Unreal Editor, or supply a "
                     f"real filesystem directory."
                 )
-            import unreal
-            for asset_path in unreal.EditorAssetLibrary.list_assets(
-                directory, recursive=True
-            ):
-                yield asset_path
+            from .context.unreal import UnrealContext
+            ctx = UnrealContext(directory)
+            for meta in ctx.getAssets():
+                yield meta.path
         else:
             if not os.path.isdir(directory):
                 raise ValueError(f"Not a valid directory: '{directory}'")

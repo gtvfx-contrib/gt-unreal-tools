@@ -18,6 +18,7 @@ class Severity(Enum):
         ERROR: Pipeline should stop; asset is unusable.
         WARNING: Pipeline can continue; asset needs attention.
         INFO: Informational note; no action required.
+    
     """
     ERROR   = "ERROR"
     WARNING = "WARNING"
@@ -40,6 +41,7 @@ class ValidationResult:
         duration_ms: Time taken to run this check, in milliseconds.
         asset_class: Unreal asset class name if known, e.g. ``"StaticMesh"``.
         fix_hint: Brief suggestion for how to resolve a failure.
+    
     """
     asset_path:  str
     rule_name:   str
@@ -81,6 +83,7 @@ class AbstractRule(ABC):
         name: Unique snake_case identifier for the rule, e.g. ``"naming_convention"``.
         category: Rule category string used for grouping in reports.
         severity: Default :class:`Severity` for non-passing results.
+    
     """
 
     name:     str      = ""
@@ -99,6 +102,7 @@ class AbstractRule(ABC):
 
         Returns:
             A :class:`ValidationResult` with pass, fail, or skip status.
+        
         """
         ...
 
@@ -123,6 +127,7 @@ class AbstractRule(ABC):
 
         Returns:
             A fully populated :class:`ValidationResult`.
+        
         """
         return ValidationResult(
             asset_path=asset_path,
@@ -146,6 +151,7 @@ class AbstractRule(ABC):
 
         Returns:
             A :class:`ValidationResult` with ``skipped=True`` and ``passed=True``.
+        
         """
         return ValidationResult(
             asset_path=asset_path,

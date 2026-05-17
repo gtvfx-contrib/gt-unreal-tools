@@ -18,7 +18,7 @@ class ValidationReport:
         rule_count: Number of rules that ran.
         duration_ms: Wall-clock time for the full run in milliseconds.
         tool_version: Framework version string.
-        
+    
     """
     results:      list[ValidationResult]
     asset_count:  int   = 0
@@ -93,6 +93,7 @@ class ValidationReport:
         Returns:
             A list of :class:`~validator.rules.base.ValidationResult` objects
             whose severity matches.
+        
         """
         return [r for r in self.results if r.severity == severity]
 
@@ -105,6 +106,7 @@ class ValidationReport:
         Returns:
             A list of :class:`~validator.rules.base.ValidationResult` objects
             whose category matches.
+        
         """
         return [r for r in self.results if r.category == category]
 

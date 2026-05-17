@@ -1,8 +1,9 @@
-"""Custom exception types for the validator package.
+﻿"""Custom exception types for the validator package.
 
 Defines specialised exceptions for Unreal Engine API integration so that
 callers can catch predictable, well-named failures rather than relying on
 broad ``Exception`` catches.
+
 """
 
 __all__ = ["UnrealAPIError"]
@@ -21,4 +22,5 @@ class UnrealAPIError(RuntimeError):
         ...     asset = loadUnrealAsset("/Game/Meshes/SM_Rock")
         ... except UnrealAPIError as exc:
         ...     print(f"Skipping asset: {exc}")
+    
     """

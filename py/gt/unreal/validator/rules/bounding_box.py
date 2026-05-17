@@ -3,6 +3,7 @@
 Rules:
     BoundingBoxExtentRule: Validates the world bounding box extent is within the limit.
     BoundingBoxOriginRule: Validates the pivot offset from the world origin is within the limit.
+
 """
 from __future__ import annotations
 
@@ -20,6 +21,7 @@ class BoundingBoxExtentRule(AbstractRule):
         name: Rule identifier ``"bounding_box_extent"``.
         category: Rule category ``"bounding_box"``.
         severity: :attr:`Severity.WARNING`.
+    
     """
     name     = "bounding_box_extent"
     category = "bounding_box"
@@ -34,12 +36,13 @@ class BoundingBoxExtentRule(AbstractRule):
         Returns:
             A :class:`ValidationResult` indicating whether the bounding box extent
             is within the configured limit.
+        
         """
         try:
             asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
             return self._makeSkipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 - deferred Unreal import
 
         if not isinstance(asset, (unreal.StaticMesh, unreal.SkeletalMesh)):
             return self._makeSkipped(
@@ -62,14 +65,20 @@ class BoundingBoxExtentRule(AbstractRule):
                         f"(X={extent.x:.1f}, Y={extent.y:.1f}, Z={extent.z:.1f})."
                     ),
                     asset_class=asset_class,
-                    fix_hint="Check mesh scale — may have been imported with incorrect units (cm vs m).",
+                    fix_hint=(
+                        "Check mesh scale — may have been imported with incorrect "
+                        "units (cm vs m)."
+                    ),
                 )
             return self._makeResult(
                 asset_path, passed=True,
-                message=f"Bounding box extent {max_component:.1f} UU — within limit of {max_uu} UU.",
+                message=(
+                    f"Bounding box extent {max_component:.1f} UU — "
+                    f"within limit of {max_uu} UU."
+                ),
                 asset_class=asset_class,
             )
-        except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+        except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
             return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
@@ -83,6 +92,7 @@ class BoundingBoxOriginRule(AbstractRule):
         name: Rule identifier ``"bounding_box_origin"``.
         category: Rule category ``"bounding_box"``.
         severity: :attr:`Severity.WARNING`.
+    
     """
     name     = "bounding_box_origin"
     category = "bounding_box"
@@ -97,12 +107,13 @@ class BoundingBoxOriginRule(AbstractRule):
         Returns:
             A :class:`ValidationResult` indicating whether the mesh center
             is within the configured offset limit from the world origin.
+        
         """
         try:
             asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
             return self._makeSkipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 - deferred Unreal import
 
         if not isinstance(asset, (unreal.StaticMesh, unreal.SkeletalMesh)):
             return self._makeSkipped(
@@ -126,12 +137,18 @@ class BoundingBoxOriginRule(AbstractRule):
                         f"limit is {max_offset} UU."
                     ),
                     asset_class=asset_class,
-                    fix_hint="Reset the pivot to world origin in your DCC tool before re-importing.",
+                    fix_hint=(
+                        "Reset the pivot to world origin in your DCC tool "
+                        "before re-importing."
+                    ),
                 )
             return self._makeResult(
                 asset_path, passed=True,
-                message=f"Mesh center is {offset:.1f} UU from origin — within limit of {max_offset} UU.",
+                message=(
+                    f"Mesh center is {offset:.1f} UU from origin — "
+                    f"within limit of {max_offset} UU."
+                ),
                 asset_class=asset_class,
             )
-        except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+        except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
             return self._makeSkipped(asset_path, f"Validation error: {exc}")

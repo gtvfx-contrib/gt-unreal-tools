@@ -3,6 +3,7 @@
 Rules:
     LODCountRule: Validates the LOD count for StaticMesh and SkeletalMesh assets.
     LODScreenSizeRatioRule: Validates that LOD screen size thresholds decrease monotonically.
+
 """
 from __future__ import annotations
 
@@ -20,6 +21,7 @@ class LODCountRule(AbstractRule):
         name: Rule identifier ``"lod_count"``.
         category: Rule category ``"lod"``.
         severity: :attr:`Severity.ERROR`.
+    
     """
     name     = "lod_count"
     category = "lod"
@@ -34,17 +36,19 @@ class LODCountRule(AbstractRule):
         Returns:
             A :class:`ValidationResult` indicating whether the LOD count is within
             the configured minimum and maximum bounds.
+        
         """
         try:
             asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
             return self._makeSkipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 - deferred Unreal import
 
         if not isinstance(asset, (unreal.StaticMesh, unreal.SkeletalMesh)):
             return self._makeSkipped(
                 asset_path,
-                f"LOD count check only applies to StaticMesh/SkeletalMesh (got {type(asset).__name__})."
+                "LOD count check only applies to "
+                f"StaticMesh/SkeletalMesh (got {type(asset).__name__})."
             )
 
         try:
@@ -72,7 +76,7 @@ class LODCountRule(AbstractRule):
                 message=f"{asset_class} has {lod_count} LOD(s) — within [{min_lods}, {max_lods}].",
                 asset_class=asset_class,
             )
-        except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+        except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
             return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
@@ -84,6 +88,7 @@ class LODScreenSizeRatioRule(AbstractRule):
         name: Rule identifier ``"lod_screen_size_ratio"``.
         category: Rule category ``"lod"``.
         severity: :attr:`Severity.WARNING`.
+    
     """
     name     = "lod_screen_size_ratio"
     category = "lod"
@@ -98,12 +103,13 @@ class LODScreenSizeRatioRule(AbstractRule):
         Returns:
             A :class:`ValidationResult` indicating whether screen size values
             decrease correctly across all LOD levels.
+        
         """
         try:
             asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
             return self._makeSkipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 - deferred Unreal import
 
         if not isinstance(asset, unreal.StaticMesh):
             return self._makeSkipped(
@@ -129,7 +135,7 @@ class LODScreenSizeRatioRule(AbstractRule):
                     screen_sizes.append(
                         size.default_value if hasattr(size, "default_value") else float(size)
                     )
-            except Exception:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+            except Exception:  # noqa: BLE001 - Unreal bridge safety
                 return self._makeSkipped(
                     asset_path,
                     "Could not read LOD screen sizes — may require resaving in Editor.",
@@ -151,14 +157,20 @@ class LODScreenSizeRatioRule(AbstractRule):
             if violations:
                 return self._makeResult(
                     asset_path, passed=False,
-                    message=f"LOD screen size thresholds not monotonically decreasing: {violations}.",
+                    message=(
+                        "LOD screen size thresholds not monotonically "
+                        f"decreasing: {violations}."
+                    ),
                     asset_class="StaticMesh",
-                    fix_hint="Adjust LOD screen size thresholds in the Static Mesh Editor to decrease with each LOD.",
+                    fix_hint=(
+                        "Adjust LOD screen size thresholds in the Static "
+                        "Mesh Editor to decrease with each LOD."
+                    ),
                 )
             return self._makeResult(
                 asset_path, passed=True,
                 message=f"LOD screen size thresholds decrease correctly across {lod_count} LODs.",
                 asset_class="StaticMesh",
             )
-        except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+        except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
             return self._makeSkipped(asset_path, f"Validation error: {exc}")

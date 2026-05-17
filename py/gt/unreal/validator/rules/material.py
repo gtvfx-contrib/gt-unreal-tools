@@ -5,6 +5,7 @@ Rules:
     MaterialTwoSidedRule: Flags materials with two-sided rendering enabled.
     MaterialTextureSampleRule: Validates the texture sample count is within the limit.
     MaterialExpensiveNodeRule: Detects expensive shader nodes in the material graph.
+
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ class MaterialBlendModeRule(AbstractRule):
         name: Rule identifier ``"material_blend_mode"``.
         category: Rule category ``"material"``.
         severity: :attr:`Severity.WARNING`.
+    
     """
     name     = "material_blend_mode"
     category = "material"
@@ -39,12 +41,13 @@ class MaterialBlendModeRule(AbstractRule):
         Returns:
             A :class:`ValidationResult` indicating whether the material uses an
             acceptable blend mode.
+        
         """
         try:
             asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
             return self._makeSkipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 - deferred Unreal import
 
         if not isinstance(asset, unreal.Material):
             return self._makeSkipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
@@ -65,14 +68,17 @@ class MaterialBlendModeRule(AbstractRule):
                         f"Translucent materials are expensive — use with caution."
                     ),
                     asset_class="Material",
-                    fix_hint="Consider using Masked or Opaque blend mode if transparency is not essential.",
+                    fix_hint=(
+                        "Consider using Masked or Opaque blend mode if "
+                        "transparency is not essential."
+                    ),
                 )
             return self._makeResult(
                 asset_path, passed=True,
                 message=f"Material blend mode '{blend_mode}' is acceptable.",
                 asset_class="Material",
             )
-        except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+        except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
             return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
@@ -86,6 +92,7 @@ class MaterialTwoSidedRule(AbstractRule):
         name: Rule identifier ``"material_two_sided"``.
         category: Rule category ``"material"``.
         severity: :attr:`Severity.INFO`.
+    
     """
     name     = "material_two_sided"
     category = "material"
@@ -100,30 +107,34 @@ class MaterialTwoSidedRule(AbstractRule):
         Returns:
             A :class:`ValidationResult` indicating whether two-sided rendering
             is disabled on the material.
+        
         """
         try:
             asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
             return self._makeSkipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 - deferred Unreal import
 
         if not isinstance(asset, unreal.Material):
             return self._makeSkipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
 
         try:
-            if asset.two_sided:
+            if asset.get_editor_property("two_sided"):
                 return self._makeResult(
                     asset_path, passed=False,
                     message="Material has Two-Sided rendering enabled — increases draw call cost.",
                     asset_class="Material",
-                    fix_hint="Disable Two-Sided unless required (e.g., foliage). Consider geometry normals instead.",
+                    fix_hint=(
+                        "Disable Two-Sided unless required (e.g., "
+                        "foliage). Consider geometry normals instead."
+                    ),
                 )
             return self._makeResult(
                 asset_path, passed=True,
                 message="Material Two-Sided is disabled.",
                 asset_class="Material",
             )
-        except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+        except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
             return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
@@ -135,6 +146,7 @@ class MaterialTextureSampleRule(AbstractRule):
         name: Rule identifier ``"material_texture_samples"``.
         category: Rule category ``"material"``.
         severity: :attr:`Severity.WARNING`.
+    
     """
     name     = "material_texture_samples"
     category = "material"
@@ -149,12 +161,13 @@ class MaterialTextureSampleRule(AbstractRule):
         Returns:
             A :class:`ValidationResult` indicating whether the number of texture
             samples is within the configured limit.
+        
         """
         try:
             asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
             return self._makeSkipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 - deferred Unreal import
 
         if not isinstance(asset, unreal.Material):
             return self._makeSkipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
@@ -170,16 +183,25 @@ class MaterialTextureSampleRule(AbstractRule):
             if sample_count > max_samples:
                 return self._makeResult(
                     asset_path, passed=False,
-                    message=f"Material has {sample_count} texture samples — limit is {max_samples}.",
+                    message=(
+                        f"Material has {sample_count} texture samples — "
+                        f"limit is {max_samples}."
+                    ),
                     asset_class="Material",
-                    fix_hint="Consolidate texture channels into packed textures to reduce sample count.",
+                    fix_hint=(
+                        "Consolidate texture channels into packed textures "
+                        "to reduce sample count."
+                    ),
                 )
             return self._makeResult(
                 asset_path, passed=True,
-                message=f"Material has {sample_count} texture sample(s) — within limit of {max_samples}.",
+                message=(
+                    f"Material has {sample_count} texture sample(s) — "
+                    f"within limit of {max_samples}."
+                ),
                 asset_class="Material",
             )
-        except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+        except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
             return self._makeSkipped(asset_path, f"Validation error: {exc}")
 
 
@@ -194,6 +216,7 @@ class MaterialExpensiveNodeRule(AbstractRule):
         name: Rule identifier ``"material_expensive_nodes"``.
         category: Rule category ``"material"``.
         severity: :attr:`Severity.WARNING`.
+    
     """
     name     = "material_expensive_nodes"
     category = "material"
@@ -217,12 +240,13 @@ class MaterialExpensiveNodeRule(AbstractRule):
         Returns:
             A :class:`ValidationResult` indicating whether any expensive shader
             nodes were detected in the material expression graph.
+        
         """
         try:
             asset = loadUnrealAsset(asset_path)
         except UnrealAPIError as exc:
             return self._makeSkipped(asset_path, str(exc))
-        import unreal  # noqa: PLC0415 – local import; safe here because loadUnrealAsset guarantees Unreal is available
+        import unreal  # noqa: PLC0415 - deferred Unreal import
 
         if not isinstance(asset, unreal.Material):
             return self._makeSkipped(asset_path, f"Not a Material (got {type(asset).__name__}).")
@@ -240,12 +264,15 @@ class MaterialExpensiveNodeRule(AbstractRule):
                     asset_path, passed=False,
                     message=f"Material contains expensive nodes: {expensive}.",
                     asset_class="Material",
-                    fix_hint="Consider baking expensive operations into textures using Bake Material Attributes.",
+                    fix_hint=(
+                        "Consider baking expensive operations into textures "
+                        "using Bake Material Attributes."
+                    ),
                 )
             return self._makeResult(
                 asset_path, passed=True,
                 message="No expensive material nodes detected.",
                 asset_class="Material",
             )
-        except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+        except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
             return self._makeSkipped(asset_path, f"Validation error: {exc}")

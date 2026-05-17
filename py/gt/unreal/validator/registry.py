@@ -12,6 +12,7 @@ Usage::
     class MyRule(AbstractRule):
         name = "my_rule"
         ...
+
 """
 from __future__ import annotations
 
@@ -49,6 +50,7 @@ class RuleRegistry:
             @registry.register(category="naming", severity=Severity.ERROR)
             class NamingConventionRule(AbstractRule):
                 name = "naming_convention"
+        
         """
         def decorator(cls: Type) -> Type:
             if category:
@@ -72,6 +74,7 @@ class RuleRegistry:
         Triggers module-level ``@registry.register`` decorators, populating
         the registry without requiring explicit imports.  Subsequent calls are
         no-ops (discovery runs at most once per process).
+        
         """
         if self._discovered:
             return
@@ -103,6 +106,7 @@ class RuleRegistry:
 
         Returns:
             A list of rule classes matching the given filters.
+        
         """
         rules = list(self._rules.values())
         if category:

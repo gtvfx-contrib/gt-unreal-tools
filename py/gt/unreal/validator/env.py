@@ -13,9 +13,9 @@ Example::
     else:
         # run filesystem-only checks
         ...
+
 """
 import logging
-import sys
 from typing import Any
 
 from .errors import UnrealAPIError
@@ -55,6 +55,7 @@ def requireUnreal(msg: str = "") -> None:
     Raises:
         ImportError: If Unreal Engine is not available in the current
             Python environment.
+    
     """
     if not UNREAL_AVAILABLE:
         raise ImportError(
@@ -80,6 +81,7 @@ def loadUnrealAsset(asset_path: str) -> Any:
     Raises:
         UnrealAPIError: If Unreal is unavailable, if the API call raises,
             or if the returned asset is ``None``.
+    
     """
     if not UNREAL_AVAILABLE:
         raise UnrealAPIError(
@@ -88,7 +90,7 @@ def loadUnrealAsset(asset_path: str) -> Any:
     try:
         import unreal  # noqa: PLC0415 – deferred to avoid top-level ImportError
         obj = unreal.EditorAssetLibrary.load_asset(asset_path)
-    except Exception as exc:  # noqa: BLE001 – Unreal C++ bridge raises undocumented exceptions
+    except Exception as exc:  # noqa: BLE001 - Unreal bridge safety
         raise UnrealAPIError(
             f"Unreal API error loading '{asset_path}': {exc}"
         ) from exc

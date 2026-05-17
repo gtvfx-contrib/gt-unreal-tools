@@ -1,4 +1,4 @@
-"""Unified CLI entry-point for the asset validation framework.
+﻿﻿"""Unified CLI entry-point for the asset validation framework.
 
 Supports environment variable overrides for every flag (useful in CI)::
 
@@ -37,6 +37,7 @@ def buildParser() -> argparse.ArgumentParser:
 
     Returns:
         A configured :class:`argparse.ArgumentParser` instance.
+    
     """
     parser = argparse.ArgumentParser(
         prog="python run_validator.py",
@@ -54,7 +55,6 @@ exit codes:
   0   all checks passed (or only warnings/infos)
   1   at least one ERROR-severity failure
   2   configuration or argument error
-  
 """,
     )
     parser.add_argument(
@@ -125,6 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     Returns:
         ``0`` if all checks passed, ``1`` if any ERROR-severity rule failed,
         ``2`` if there was a configuration or argument error.
+    
     """
     import logging
 
@@ -181,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
 
     formatter_cls = _FORMATTERS.get(fmt, ConsoleFormatter)
     formatter = formatter_cls(show_passing=args.show_passing or config.get("show_passing", False))
-    output_text = formatter.format(report)
+    output_text = formatter.render(report)
 
     if output_dir and fmt != "console":
         os.makedirs(output_dir, exist_ok=True)

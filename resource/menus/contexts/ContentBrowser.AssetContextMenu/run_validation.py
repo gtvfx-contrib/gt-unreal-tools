@@ -1,8 +1,7 @@
 # label: Run Validation
-# tooltip: Runs the validation tool
+# tooltip: Validate the selected asset(s) and print results to the Output Log.
 # order: 1.0
 # section: Validation
 
-print("Running validation...")
-
-
+from gt.unreal.validator.entry_points.run_validation import runOnSelectedAssets
+runOnSelectedAssets()

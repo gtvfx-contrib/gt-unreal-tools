@@ -14,6 +14,7 @@ Example::
     config = Config("my_config.json")
     max_mb = config.get("max_file_size_mb")   # 50 (default)
     config["naming_pattern"]                  # raises KeyError if missing
+
 """
 from __future__ import annotations
 
@@ -90,6 +91,7 @@ class Config:
 
     Merges built-in defaults, an optional JSON file, and environment variable
     overrides into a single dict-like object.
+    
     """
 
     def __init__(self, config_path: str | None = None, validate: bool = True) -> None:
@@ -105,6 +107,7 @@ class Config:
             ValueError: If ``config_path`` is given but the file does not
                 exist, the JSON is malformed, or (with ``validate=True``) any
                 config value has the wrong type.
+        
         """
         self._data: dict[str, Any] = dict(DEFAULTS)
 
@@ -132,6 +135,7 @@ class Config:
         Raises:
             ValueError: If the file does not exist, is not a JSON object, or
                 contains malformed JSON.
+        
         """
         if not os.path.isfile(path):
             raise ValueError(f"Config file not found: '{path}'")
@@ -155,6 +159,7 @@ class Config:
         Example:
             ``VALIDATOR_MAX_FILE_SIZE_MB=100`` sets ``max_file_size_mb=100``
             (coerced to ``int``).
+        
         """
         result: dict[str, Any] = {}
         prefix = "VALIDATOR_"
@@ -178,6 +183,7 @@ class Config:
 
         Returns:
             The coerced value, or the original string if coercion fails.
+        
         """
         default = DEFAULTS.get(key)
         if default is None:
@@ -224,6 +230,7 @@ class Config:
 
         Returns:
             The stored value for *key*, or *default*.
+        
         """
         return self._data.get(key, default)
 

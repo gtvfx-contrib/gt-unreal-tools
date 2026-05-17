@@ -19,6 +19,7 @@ JSON format::
             }
         ]
     }
+
 """
 from __future__ import annotations
 
@@ -40,6 +41,7 @@ class AllowlistEntry:
         asset: Content-browser or filesystem path of the exempted asset.
         reason: Human-readable justification for the exception.
         author: Username or identifier of the approver.
+    
     """
 
     def __init__(self, rule: str, asset: str, reason: str = "",
@@ -53,6 +55,7 @@ class AllowlistEntry:
             author: Username or identifier of the approver.
             expires: Optional expiry date string in ``YYYY-MM-DD`` format.
                 Entries past this date are treated as expired.
+        
         """
         self.rule   = rule
         self.asset  = asset
@@ -68,11 +71,6 @@ class AllowlistEntry:
                     "[Allowlist] Invalid expiry date '%s' for rule=%s asset=%s — ignoring.",
                     expires, rule, asset,
                 )
-
-    @property
-    def expiresStr(self) -> str | None:
-        """Optional expiry date string in ``YYYY-MM-DD`` format."""
-        return self._expires_str
 
     def isExpired(self) -> bool:
         """Return True if this entry has passed its expiry date."""
@@ -100,6 +98,7 @@ class AllowlistManager:
         manager = AllowlistManager(config)
         if manager.isAllowed("material_blend_mode", "/Game/M_HeroSkin"):
             return self._makeResult(asset_path, passed=True, message="Allowlisted.")
+    
     """
 
     def __init__(self, config: "Config") -> None:
@@ -108,6 +107,7 @@ class AllowlistManager:
         Args:
             config: Loaded :class:`~validator.config.Config` instance.
                 The ``allowlist`` key must contain a list of entry dicts.
+        
         """
         raw_entries: list[dict] = config.get("allowlist", [])
         self._entries: list[AllowlistEntry] = []
@@ -125,7 +125,7 @@ class AllowlistManager:
             if entry.isExpired():
                 logger.warning(
                     "[Allowlist] Expired entry skipped: rule=%s asset=%s expired=%s",
-                    entry.rule, entry.asset, entry.expiresStr,
+                    entry.rule, entry.asset, entry._expires_str,
                 )
             else:
                 self._entries.append(entry)
@@ -144,6 +144,7 @@ class AllowlistManager:
         Returns:
             ``True`` when an active (non-expired) entry matches, ``False``
             otherwise.
+        
         """
         for entry in self._entries:
             if entry.rule == rule_name and entry.asset == asset_path:
@@ -159,6 +160,7 @@ class AllowlistManager:
 
         Returns:
             The matching entry, or ``None`` if no active entry is found.
+        
         """
         for entry in self._entries:
             if entry.rule == rule_name and entry.asset == asset_path:
