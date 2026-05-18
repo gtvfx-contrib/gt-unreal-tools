@@ -22,11 +22,11 @@ from pathlib import Path
 
 import unreal
 
-from gt.unreal.validator.config import Config
-from gt.unreal.validator.errors import UnrealAPIError
-from gt.unreal.validator.reporting import HTMLFormatter, JSONFormatter
-from gt.unreal.validator.reporting.models import ValidationReport
-from gt.unreal.validator.runner import ValidationRunner
+from ..config import Config
+from ..errors import UnrealAPIError
+from ..reporting import HTMLFormatter, JSONFormatter
+from ..reporting.models import ValidationReport
+from ..runner import ValidationRunner
 
 
 # ── Logging ───────────────────────────────────────────────────────────────── #
