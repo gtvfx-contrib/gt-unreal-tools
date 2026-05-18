@@ -28,7 +28,14 @@ logger = logging.getLogger(__name__)
 
 
 class RuleRegistry:
-    """Global registry of validation rules."""
+    """Singleton registry for AbstractRule subclasses."""
+
+    _instance: "RuleRegistry | None" = None
+
+    def __new__(cls) -> "RuleRegistry":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self) -> None:
         self._rules: dict[str, Type] = {}
