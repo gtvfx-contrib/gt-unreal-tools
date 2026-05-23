@@ -1,5 +1,6 @@
 """Startup script for Unreal Engine integration."""
 
+import sys
 
 import unreal
 from gt.pycore import Startup
@@ -7,6 +8,9 @@ from gt.pycore import Startup
 
 # Unreal Engine version prefix (e.g. "5.5.4") used for UE version-specific logic where needed
 UE_VERSION = unreal.SystemLibrary.get_engine_version()[:5]
+
+# Prevent __pycache__ directories and .pyc files from being generated from Unreal runtime.
+sys.dont_write_bytecode = True
 
 
 def _listMenus(search_limit: int = 2000, output: bool = False) -> list[str]:
