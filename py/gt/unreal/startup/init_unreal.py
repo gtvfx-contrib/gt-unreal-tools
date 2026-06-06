@@ -1,12 +1,16 @@
 """Startup script for Unreal Engine integration."""
-
-
 import unreal
+
+import sys
+
 from gt.pycore import Startup
 
 
 # Unreal Engine version prefix (e.g. "5.5.4") used for UE version-specific logic where needed
 UE_VERSION = unreal.SystemLibrary.get_engine_version()[:5]
+
+# Prevent .pyc files and __pycache__ from being generated from the Unreal runtime.
+sys.dont_write_bytecode = True
 
 # ------------------------------------------------------------------------------
 # Global utility functions for Unreal Engine Python scripting
