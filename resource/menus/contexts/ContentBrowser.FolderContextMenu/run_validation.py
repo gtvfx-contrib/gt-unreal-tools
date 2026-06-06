@@ -4,7 +4,6 @@
 # section: Validation
 
 from gt.validator.entry_points import run_validation
-print("AssetContextMenu > Run Validation")
-run_validation.runOnSelectedAssets()
-
+print("FolderContextMenu > Run Validation")
+run_validation.runOnSelectedFolders()
 

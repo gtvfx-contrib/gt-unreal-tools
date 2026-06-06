@@ -2,4 +2,6 @@
 # tooltip: Runs the validation tool for static meshes
 # section: GetAssetActions
 
-print("Running validation...")
+from gt.validator.entry_points import run_validation
+print("StaticMesh > validate_mesh")
+run_validation.runOnSelectedAssets()

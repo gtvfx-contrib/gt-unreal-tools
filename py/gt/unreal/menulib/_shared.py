@@ -21,7 +21,7 @@ import json
 import os
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Module-level registry — maps callback_id → MenuLib / ContextMenuLib instance
@@ -66,7 +66,7 @@ class MenuNode:
     path: str
     is_separator: bool = False
     is_submenu: bool = False
-    children: List["MenuNode"] = field(default_factory=list)
+    children: list["MenuNode"] = field(default_factory=list)
     order: float = float("inf")
     tooltip: str = ""
     section: str = ""
@@ -76,7 +76,7 @@ class MenuNode:
 # General helpers
 # ---------------------------------------------------------------------------
 
-def list_menus(search_limit: int = 2000, output: bool = False) -> List[str]:
+def list_menus(search_limit: int = 2000, output: bool = False) -> list[str]:
     """Return a list of all registered menu names."""
     registered_names = set()
 
@@ -230,13 +230,13 @@ def _parse_py_item(path: str) -> dict:
 # Directory scanner
 # ---------------------------------------------------------------------------
 
-def _scan_directory_local_only(dir_path: str) -> List[MenuNode]:
+def _scan_directory_local_only(dir_path: str) -> list[MenuNode]:
     """Scan *dir_path* for local ``.py`` action files only (no subdirectory recursion).
 
     Used by :func:`_scan_inject_slot` to collect items that live alongside an
     ``__inject__.json`` sidecar so they can be merged with injected content.
     """
-    nodes: List[MenuNode] = []
+    nodes: list[MenuNode] = []
 
     try:
         entries = sorted(os.scandir(dir_path), key=lambda e: e.name.lower())
@@ -274,7 +274,7 @@ def _scan_directory_local_only(dir_path: str) -> List[MenuNode]:
     return nodes
 
 
-def _scan_inject_slot(folder_path: str, config: dict) -> List[MenuNode]:
+def _scan_inject_slot(folder_path: str, config: dict) -> list[MenuNode]:
     """Resolve an injection slot and return its flattened child nodes.
 
     Reads ``source_env`` from *config*, scans all valid paths listed in that
@@ -286,7 +286,7 @@ def _scan_inject_slot(folder_path: str, config: dict) -> List[MenuNode]:
     source_env = config.get("source_env", "")
     raw = os.environ.get(source_env, "") if source_env else ""
 
-    injected: List[MenuNode] = []
+    injected: list[MenuNode] = []
     groups: dict = {}
     for path in raw.split(";"):
         path = path.strip()
@@ -308,7 +308,7 @@ def _scan_inject_slot(folder_path: str, config: dict) -> List[MenuNode]:
     return combined
 
 
-def _scan_directory(dir_path: str) -> List[MenuNode]:
+def _scan_directory(dir_path: str) -> list[MenuNode]:
     """Recursively scan *dir_path* and return an ordered list of :class:`MenuNode`.
 
     * Directories → submenu nodes (recursive scan)
@@ -319,7 +319,7 @@ def _scan_directory(dir_path: str) -> List[MenuNode]:
     Directories whose name contains ``_resource``, starts with ``.``, or equals
     ``__pycache__`` are skipped entirely.
     """
-    nodes: List[MenuNode] = []
+    nodes: list[MenuNode] = []
 
     try:
         entries = sorted(os.scandir(dir_path), key=lambda e: e.name.lower())
@@ -399,7 +399,7 @@ def _scan_directory(dir_path: str) -> List[MenuNode]:
     return nodes
 
 
-def _merge_children(primary: List[MenuNode], secondary: List[MenuNode]) -> None:
+def _merge_children(primary: list[MenuNode], secondary: list[MenuNode]) -> None:
     """Merge *secondary* nodes into *primary* in-place, then sort by order.
 
     Sub-menus whose ``display_name`` matches an existing primary sub-menu are
@@ -502,10 +502,12 @@ def _populate_menu(owner_name: str, parent_menu, node: MenuNode) -> None:
 
                 parent_path = str(parent_menu.menu_name)
                 sub_path = f"{parent_path}.{sub_name}"
-                print(
-                    f"MenuLib: add_sub_menu {child.display_name!r}"
-                    f" on {_parent_path!r} section={sub_section!r}"
-                )
+
+                # TODO: Implement DEBUG logging and replace these prints with log statements
+                # print(
+                #     f"MenuLib: add_sub_menu {child.display_name!r}"
+                #     f" on {_parent_path!r} section={sub_section!r}"
+                # )
 
                 # Pre-register the sub-menu as a persistent ToolMenu so its
                 # items survive dynamic menu rebuilds (e.g. the base
@@ -526,7 +528,7 @@ def _populate_menu(owner_name: str, parent_menu, node: MenuNode) -> None:
                             )
                         except TypeError:
                             sub = tool_menus.register_menu(unreal.Name(sub_path))
-                        print(f"MenuLib: registered sub-menu {sub_path!r}")
+                        # print(f"MenuLib: registered sub-menu {sub_path!r}")
                     except Exception as reg_exc:
                         print(
                             f"MenuLib: register_menu({sub_path!r}) raised"
@@ -554,10 +556,10 @@ def _populate_menu(owner_name: str, parent_menu, node: MenuNode) -> None:
                             pass
 
                 if sub:
-                    print(
-                        f"MenuLib: OK sub-menu {child.display_name!r}"
-                        f" -> {str(getattr(sub, 'menu_name', '?'))!r}"
-                    )
+                    # print(
+                    #     f"MenuLib: OK sub-menu {child.display_name!r}"
+                    #     f" -> {str(getattr(sub, 'menu_name', '?'))!r}"
+                    # )
                     _populate_menu(owner_name, sub, child)
                 else:
                     print(
@@ -589,14 +591,14 @@ def _populate_menu(owner_name: str, parent_menu, node: MenuNode) -> None:
                     unreal.Name(""),
                     string=f"import runpy; runpy.run_path({repr(child.path)})",
                 )
-                print(
-                    f"MenuLib: adding entry {child.display_name!r}"
-                    f" to {_parent_path!r}"
-                    + (f" section={section_name!r}" if section_name else "")
-                )
+                # print(
+                #     f"MenuLib: adding entry {child.display_name!r}"
+                #     f" to {_parent_path!r}"
+                #     + (f" section={section_name!r}" if section_name else "")
+                # )
                 try:
                     parent_menu.add_menu_entry(unreal.Name(section_name), entry)
-                    print(f"MenuLib: OK added {child.display_name!r}")
+                    # print(f"MenuLib: OK added {child.display_name!r}")
                 except Exception as entry_exc:
                     print(
                         f"MenuLib: failed to add item {child.display_name!r}"

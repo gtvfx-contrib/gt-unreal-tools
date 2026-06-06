@@ -8,6 +8,10 @@ from gt.pycore import Startup
 # Unreal Engine version prefix (e.g. "5.5.4") used for UE version-specific logic where needed
 UE_VERSION = unreal.SystemLibrary.get_engine_version()[:5]
 
+# ------------------------------------------------------------------------------
+# Global utility functions for Unreal Engine Python scripting
+# ------------------------------------------------------------------------------
+# region utils
 
 def _listMenus(search_limit: int = 2000, output: bool = False) -> list[str]:
     """Return a list of all registered menu names."""
@@ -57,19 +61,16 @@ def _dump(obj, values=False):
         values (bool, optional): If true will print <attr> = <attr value>
 
     """
-    attrs = sorted(dir(obj))
-
-    if not values:
-        for attr in attrs:
-            print(attr)
+    if values:
+        [print(f"{attr} = {getattr(obj, attr)}") for attr in sorted(dir(obj))]
     else:
-        for attr in attrs:
-            print(f"{attr} = {getattr(obj, attr)}\n")
+        [print(attr) for attr in sorted(dir(obj))]
 
-
-# ---------------------------------------------------------------------------
+# endregion utils
+# ------------------------------------------------------------------------------
 # Initialization steps
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# region init_steps
 
 _startup = Startup(
     on_error=lambda name, exc: unreal.log_error(
@@ -98,3 +99,5 @@ def _initialize_context_menus():
 
 # Run all steps and remove every init name (and _startup itself) from globals.
 _startup.run(globals())
+
+# endregion init_steps
