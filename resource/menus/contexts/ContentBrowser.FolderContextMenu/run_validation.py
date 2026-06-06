@@ -3,7 +3,6 @@
 # order: 1.0
 # section: Validation
 
-from gt.validator.entry_points import run_validation
+from gt.validator.entry_points.unreal import run_validation
 print("FolderContextMenu > Run Validation")
 run_validation.runOnSelectedFolders()
-
